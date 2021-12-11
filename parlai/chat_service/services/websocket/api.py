@@ -14,7 +14,7 @@ logging.basicConfig(filename='parlai_api.log', level=30)
 
 parser = argparse.ArgumentParser(description="Simple API for ParlAI chat bot")
 parser.add_argument('--hostname', default="localhost", help="ParlAI web server hostname.")
-parser.add_argument('--port', type=int, default=8080, help="ParlAI web server port.")
+parser.add_argument('--port', type=int, default=8081, help="ParlAI web server port.")
 parser.add_argument('--serving_hostname', default="0.0.0.0", help="API web server hostname.")
 parser.add_argument('--serving_port', type=int, default=8080, help="API web server port.")
 

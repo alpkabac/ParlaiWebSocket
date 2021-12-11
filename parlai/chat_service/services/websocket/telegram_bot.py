@@ -5,7 +5,7 @@ from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler
 from telegram import ReplyKeyboardMarkup
 
-TOKEN = "1156352622:AAEo8fqFYKZet_jpcCW2SlnYWQRp-PzQGxw"
+TOKEN = "5098174151:AAE3YBU8KYNud9mgy-4sKax9J1wCt8ZowzI"
 
 parser = argparse.ArgumentParser(description="Telegram bot for API testing.")
 parser.add_argument('--api_hostname', default="localhost", help="ParlAI API hostname.")
