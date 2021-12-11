@@ -16,7 +16,7 @@ from parlai.chat_service.core.chat_service_manager import ChatServiceManager
 import parlai.chat_service.utils.logging as log_utils
 import parlai.chat_service.utils.misc as utils
 from parlai.chat_service.services.websocket.sockets import MessageSocketHandler
-from .agents import WebsocketAgent
+from agents import WebsocketAgent
 import tornado
 from tornado.options import options
 
@@ -217,7 +217,7 @@ class WebsocketManager(ChatServiceManager):
             debug=self.debug,
         )
 
-    def observe_message(self, socket_id, message, quick_replies=None):
+    def observe_message(self, socket_id, message, quick_replies=None, message_history=[]):
         """
         Send a message through the message manager.
 
@@ -234,7 +234,7 @@ class WebsocketManager(ChatServiceManager):
             quick_replies = list(quick_replies)
 
         message = json.dumps(
-            {'text': message.replace('\n', '<br />'), 'quick_replies': quick_replies}
+            {'text': message.replace('\n', '<br />'), 'quick_replies': quick_replies, 'message_history': message_history}
         )
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

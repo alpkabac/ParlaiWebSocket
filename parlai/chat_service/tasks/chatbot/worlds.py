@@ -62,7 +62,7 @@ class MessengerBotChatTaskWorld(World):
                     'id': 'World',
                     'text': 'Welcome to the ParlAI Chatbot demo. '
                     'You are now paired with a bot - feel free to send a message.'
-                    'Type [DONE] to finish the chat, or [RESET] to reset the dialogue history.',
+                    'Type [DONE] to finish the chat.',
                 }
             )
             self.first_time = False
@@ -70,19 +70,18 @@ class MessengerBotChatTaskWorld(World):
         if a is not None:
             if '[DONE]' in a['text']:
                 self.episodeDone = True
-            elif '[RESET]' in a['text']:
-                self.model.reset()
-                self.agent.observe({"text": "[History Cleared]", "episode_done": False})
-            else:
-                print("===act====")
-                print(a)
-                print("~~~~~~~~~~~")
-                self.model.observe(a)
-                response = self.model.act()
-                print("===response====")
-                print(response)
-                print("~~~~~~~~~~~")
-                self.agent.observe(response)
+                return
+            if a['text'].startswith('your persona:'):
+                a['id'] = 'context'
+            print("===act====")
+            print(a)
+            print("~~~~~~~~~~~")
+            self.model.observe(a)
+            response = self.model.act()
+            print("===response====")
+            print(response)
+            print("~~~~~~~~~~~")
+            self.agent.observe(response)
 
     def episode_done(self):
         return self.episodeDone
@@ -121,15 +120,12 @@ class MessengerOverworld(World):
                 {
                     'id': 'Overworld',
                     'text': 'Welcome to the overworld for the ParlAI messenger '
-                    'chatbot demo. Please type "begin" to start, or "exit" to exit',
-                    'quick_replies': ['begin', 'exit'],
+                    'chatbot demo. Please type "begin" to start.',
+                    'quick_replies': ['begin'],
                 }
             )
             self.first_time = False
         a = self.agent.act()
-        if a is not None and a['text'].lower() == 'exit':
-            self.episode_done = True
-            return 'EXIT'
         if a is not None and a['text'].lower() == 'begin':
             self.episodeDone = True
             return 'default'

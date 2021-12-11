@@ -4,16 +4,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional
-from parlai.core.params import ParlaiParser
-from parlai.core.opt import Opt
 import json
 import random
 
 from parlai.tasks.blended_skill_talk.agents import raw_data_path, safe_personas_path
 from parlai.tasks.interactive.worlds import InteractiveWorld as InteractiveBaseWorld
 from parlai.tasks.self_chat.worlds import SelfChatWorld as SelfChatBaseWorld
-from parlai.utils.io import PathManager
+from parlai.core.agents import create_agent
+
+
+cache = {}
 
 
 def get_contexts_data(opt, shared=None):
@@ -32,12 +32,12 @@ def _load_personas(opt):
             + '         You can also turn personas off with --include-personas False]\n'
         )
     fname = raw_data_path(opt)
-    with PathManager.open(fname) as json_file:
+    with open(fname) as json_file:
         data = json.load(json_file)
     if opt.get('include_personas', True) and opt.get('safe_personas_only', True):
         # Filter out unsafe personas
         save_personas_path = safe_personas_path(opt)
-        with PathManager.open(save_personas_path, 'r') as f:
+        with open(save_personas_path, 'r') as f:
             raw_safe_persona_groups = [line.strip() for line in f.readlines()]
         safe_persona_strings = set()
         for group in raw_safe_persona_groups:
@@ -71,6 +71,9 @@ def _load_personas(opt):
         c1 = '\n'.join(context1)
         c2 = '\n'.join(context2)
         contexts.append([c1, c2])
+
+    # No contexts, because user will set them manually
+    contexts = [['', '']]
     return contexts
 
 
@@ -102,12 +105,23 @@ def _standardize(orig: str) -> str:
 
 
 class InteractiveWorld(InteractiveBaseWorld):
-    @classmethod
-    def add_cmdline_args(
-        cls, parser: ParlaiParser, partial_opt: Optional[Opt] = None
-    ) -> ParlaiParser:
-        super().add_cmdline_args(parser, partial_opt)
-        parser = parser.add_argument_group('BST Interactive World')
+    @staticmethod
+    def generate_world(opt, agents):
+        if 'agent' not in cache:
+            agent = create_agent(opt, requireModelExists=True)
+            cache['agent'] = agent
+
+        if opt['models'] is None:
+            raise RuntimeError("Model must be specified")
+
+        return InteractiveWorld(
+            opt,
+            [agents[0], cache['agent'].clone()]
+        )
+
+    @staticmethod
+    def add_cmdline_args(argparser):
+        parser = argparser.add_argument_group('BST Interactive World')
         parser.add_argument(
             '--display-partner-persona',
             type='bool',
@@ -133,7 +147,6 @@ class InteractiveWorld(InteractiveBaseWorld):
             help='Only use personas on an allowed list of safe personas',
             hidden=True,
         )
-        return parser
 
     def __init__(self, opt, agents, shared=None):
         super().__init__(opt, agents, shared)
@@ -162,12 +175,8 @@ class InteractiveWorld(InteractiveBaseWorld):
 
 
 class SelfChatWorld(SelfChatBaseWorld):
-    @classmethod
-    def add_cmdline_args(
-        cls, parser: ParlaiParser, partial_opt: Optional[Opt] = None
-    ) -> ParlaiParser:
-        super().add_cmdline_args(parser, partial_opt)
-        parser = parser.add_argument_group('BST SelfChat World')
+    def add_cmdline_args(argparser):
+        parser = argparser.add_argument_group('BST SelfChat World')
         parser.add_argument(
             '--include-personas',
             type='bool',
@@ -180,7 +189,6 @@ class SelfChatWorld(SelfChatBaseWorld):
             default=True,
             help='Include context conversation at beginning or not',
         )
-        return parser
 
     def init_contexts(self, shared=None):
         self.contexts_data = get_contexts_data(self.opt, shared=shared)
@@ -194,3 +202,59 @@ class SelfChatWorld(SelfChatBaseWorld):
         shared_data = super().share()
         shared_data['contexts_data'] = self.contexts_data
         return shared_data
+
+
+#!/usr/bin/env python3
+
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+#
+# py parlai/chat_service/tasks/overworld_demo/run.py --debug --verbose
+
+from parlai.core.worlds import World
+from parlai.chat_service.services.messenger.worlds import OnboardWorld
+from parlai.core.agents import create_agent_from_shared
+
+
+# ---------- Chatbot demo ---------- #
+class MessengerBotChatOnboardWorld(OnboardWorld):
+    """
+    Example messenger onboarding world for Chatbot Model.
+    """
+
+    @staticmethod
+    def generate_world(opt, agents):
+        return MessengerBotChatOnboardWorld(opt=opt, agent=agents[0])
+
+    def parley(self):
+        self.episodeDone = True
+
+
+# ---------- Overworld -------- #
+class MessengerOverworld(World):
+    """
+    World to handle moving agents to their proper places.
+    """
+
+    def __init__(self, opt, agent):
+        self.agent = agent
+        self.opt = opt
+        self.first_time = True
+        self.episodeDone = False
+
+    @staticmethod
+    def generate_world(opt, agents):
+        return MessengerOverworld(opt, agents[0])
+
+    @staticmethod
+    def assign_roles(agents):
+        for a in agents:
+            a.disp_id = 'Agent'
+
+    def episode_done(self):
+        return self.episodeDone
+
+    def parley(self):
+        self.episodeDone = True
+        return 'default'

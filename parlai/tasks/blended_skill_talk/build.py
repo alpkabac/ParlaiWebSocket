@@ -9,7 +9,6 @@ import json
 import os
 
 from parlai.core import build_data
-from parlai.utils.io import PathManager
 
 
 RESOURCES = [
@@ -60,18 +59,12 @@ RESOURCES = [
         '2ee292aa0006ea002e9b23d4f7326fe9e17514ce5793d31fd8d679035d4366a7',
         zipped=False,
     ),
-    build_data.DownloadableFile(
-        'http://parl.ai/downloads/blended_skill_talk/human_annotations.json',
-        'human_annotations.json',
-        'fe76a989d4fdcfa4a5beb214054069ed0abf45f3530eaeb8df38e75f7bb14795',
-        zipped=False,
-    ),
 ]
 
 
 def build(opt):
     dpath = os.path.join(opt['datapath'], 'blended_skill_talk')
-    version = 'v1.5'
+    version = 'v1.4'
 
     if not build_data.built(dpath, version_string=version):
         print('[building data: ' + dpath + ']')
@@ -106,11 +99,11 @@ def _create_parlai_format(dpath: str):
         save_path = os.path.join(dpath, f'{datatype}.txt')
 
         print(f'Loading {load_path}.')
-        with PathManager.open(load_path, 'r', encoding='utf8') as f_read:
+        with open(load_path, 'r', encoding='utf8') as f_read:
             data = json.load(f_read)
 
         print(f'Saving to {save_path}')
-        with PathManager.open(save_path, 'w', encoding='utf8') as f_write:
+        with open(save_path, 'w', encoding='utf8') as f_write:
             for episode in data:
                 assert (
                     len(episode['dialog'])
