@@ -75,16 +75,18 @@ class MessengerBotChatTaskWorld(World):
             elif '[RESET]' in a['text']:
                 self.model.reset()
                 self.agent.observe({"text": "[History Cleared]", "episode_done": False})
-            else:
-                print("===act====")
-                print(a)
-                print("~~~~~~~~~~~")
-                self.model.observe(a)
-                response = self.model.act()
-                print("===response====")
-                print(response)
-                print("~~~~~~~~~~~")
-                self.agent.observe(response)
+                return
+            if a['text'].startswith('your persona:'):
+                a['id'] = 'context'
+            print("===act====")
+            print(a)
+            print("~~~~~~~~~~~")
+            self.model.observe(a)
+            response = self.model.act()
+            print("===response====")
+            print(response)
+            print("~~~~~~~~~~~")
+            self.agent.observe(response)
 
     def episode_done(self):
         return self.episodeDone
